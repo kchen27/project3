@@ -15,37 +15,38 @@ for _ in range(1000):
 
     award = reward
     if reward == 1:
-        award *= 80
-    reward_table[(prev_observation, observation)] = award
+        award *= 1
+    reward_table[(prev_observation, action, observation)] = award
 
-    if (prev_observation, observation) not in transition_table:
-        transition_table[(prev_observation, observation)] = 1
+    if (prev_observation, action, observation) not in transition_table:
+        transition_table[(prev_observation, action, observation)] = 1
     else:
-        transition_table[(prev_observation, observation)] = transition_table[(prev_observation, observation)] + 1
+        transition_table[(prev_observation, action, observation)] = transition_table[(prev_observation, action, observation)] + 1
 
-    if prev_observation not in transition_table_norm:
-        transition_table_norm[prev_observation] = 1
+    if (prev_observation, action) not in transition_table_norm:
+        transition_table_norm[(prev_observation, action)] = 1
     else:
-        transition_table_norm[prev_observation] = transition_table_norm[prev_observation] + 1
+        transition_table_norm[(prev_observation, action)] = transition_table_norm[(prev_observation, action)] + 1
 
 
     if terminated or truncated:
         if reward == 0.0:
-            reward_table[(prev_observation, observation)] = -1.0
+            reward_table[(prev_observation, action, observation)] = -1.0
         observation, info = env.reset()
 
 env.close()
 
 
+# normalize all the probabilities
 for item in transition_table:
     s = item[0]
-    s_p = item[1] # s prime
-    transition_table[item] = transition_table[item] / transition_table_norm[s]
+    a = item[1]
+    s_p = item[2] # s prime
+    transition_table[item] = transition_table[item] / transition_table_norm[(s, a)]
 
 
-# for elem in transition_table:
-#     print(elem, transition_table[elem])
-#     print(elem, reward_table[elem])
+
+
 
 
 # Your code for Q2.3 which implements Value Iteration
@@ -55,11 +56,18 @@ value_table = dict()
 possible_transitions = dict()
 for item in reward_table:
     key = item[0]
+    action = item[1]
     value_table[key] = 0
     if key not in possible_transitions:
-        possible_transitions[key] = [item]
+        action_table = {action: [item]}
+        possible_transitions[key] = action_table
     else:
-        possible_transitions[key] = possible_transitions[key] + [item]
+        action_table = possible_transitions[key]
+        if action not in action_table:
+            action_table[action] = [item]
+        else:
+            action_table[action] = action_table[action] + [item]
+        possible_transitions[key] = action_table
 
 
 
@@ -69,59 +77,59 @@ for item in reward_table:
 
 gamma = 0.9
 
-value_action_table = dict()
+Q_value_table = dict()
 for iteration in range(1000):
     for s in value_table:
-        possible_states = possible_transitions[s]
+        possible_actions = possible_transitions[s]
         value_action = []
-        for state in possible_states:
-            reward = reward_table[state]
-            transition = transition_table[state]
-            if reward != 0.0:
-                value_s = reward
-            else:
-                value_future = value_table[state[1]]
-                value_s = transition * (reward + gamma * value_future)
-            value_action.append((value_s, state[1]))
+        for action in possible_actions: #i terating through each action
+            summation_val = 0
+            for s_a_sp in possible_actions[action]: # for finding V_k
+                # sp is s prime
+                sp = s_a_sp[2]
+                reward = reward_table[s_a_sp]
+                transition = transition_table[s_a_sp]
 
-        value_action_table[s] = value_action
-        expected_value = sum(val[0] for val in value_action)
+                if reward != 0.0:
+                    value_s = reward
+                else:
+                    value_future = value_table[sp]
+                    value_s = transition * (reward + gamma * value_future)
+                summation_val += value_s
+            value_action.append((summation_val, action))
+        value_table[s] = max(value_action)[0]
+        Q_value_table[s] = value_action
 
-        value_table[s] = expected_value
 
-#Your code for Q2.4 which implements policy extraction
+# Gets the optimal values from the Q* table
+optimal_values = dict()
+for item in Q_value_table:
+    optimal_values[item] = max(Q_value_table[item])[0]
+
+
+
+# #Your code for Q2.4 which implements policy extraction
 
 
 
 optimal_action_table = dict()
 
-for state in value_action_table:
-    value = value_action_table[state]
-
-    value.sort()
-
-    optimal_action = value[-1][1]
-    if state == optimal_action:
-        optimal_action = value[-2][1]
-
-    # print(state, optimal_action, value)
-    if state == optimal_action - 4: # Want to move down
-        optimal_action_table[state] = 1
-    if state == optimal_action + 4: # Move up
-        optimal_action_table[state] = 3
-    if state == optimal_action - 1: # Move left
-        optimal_action_table[state] = 2
-    if state == optimal_action + 1: # Move right
-        optimal_action_table[state] = 0
-
-
-
-#Your code for Q2.5 which execute the optimal policy
+for state in Q_value_table:
+    value = Q_value_table[state]
+    optimal_action = max(value)[1]
+    optimal_action_table[state] = optimal_action
 
 
 
 
-env = gym.make("FrozenLake-v1", desc=None, map_name="4x4", render_mode="human", is_slippery=False,)
+
+
+# #Your code for Q2.5 which execute the optimal policy
+
+
+
+
+env = gym.make("FrozenLake-v1", desc=None, map_name="4x4", render_mode="human", is_slippery=True,)
 observation,info=env.reset()
 
 

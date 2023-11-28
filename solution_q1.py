@@ -10,12 +10,11 @@ observation, info = env.reset()
 
 
 alpha = 0.001
-discount = 0.95
+discount = 0.95 # Gamma
 
-k = 1
-s = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}
+
 qsa_table = dict()# key is a tuple (int, int) being (observation, possible action)
-visit_count = dict()
+
 
 
 
@@ -42,11 +41,11 @@ for n in range(100000):
         qsa_table[(observation, 1)] = 0
 
 
-    #+ k/visit_count[(observation, action)]
-    option1 = qsa_table[(observation, 0)]
+
+    option1 = qsa_table[(observation, 0)] # We want the max of the two actions
     option2 = qsa_table[(observation, 1)]
 
-    difference = (reward * 100) + discount * ((not (terminated or truncated)) * max(option1, option2)) - qsa_table[(prev_observation, action)]
+    difference = (reward * 100) + discount * (max(option1, option2)) - qsa_table[(prev_observation, action)]
     qsa_table[(prev_observation, action)] = qsa_table[(prev_observation, action)] + alpha * difference
 
 
