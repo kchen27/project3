@@ -45,10 +45,6 @@ for item in transition_table:
     transition_table[item] = transition_table[item] / transition_table_norm[(s, a)]
 
 
-
-
-
-
 # Your code for Q2.3 which implements Value Iteration
 
 # Makes the reward and transition table easier to look up when doing value iteration
@@ -68,11 +64,6 @@ for item in reward_table:
         else:
             action_table[action] = action_table[action] + [item]
         possible_transitions[key] = action_table
-
-
-
-
-
 
 
 gamma = 0.9
@@ -106,11 +97,7 @@ optimal_values = dict()
 for item in Q_value_table:
     optimal_values[item] = max(Q_value_table[item])[0]
 
-
-
 # #Your code for Q2.4 which implements policy extraction
-
-
 
 optimal_action_table = dict()
 
@@ -119,25 +106,28 @@ for state in Q_value_table:
     optimal_action = max(value)[1]
     optimal_action_table[state] = optimal_action
 
-
-
-
-
-
 # #Your code for Q2.5 which execute the optimal policy
-
-
-
 
 env = gym.make("FrozenLake-v1", desc=None, map_name="4x4", render_mode="human", is_slippery=True,)
 observation,info=env.reset()
-
-
+'''
 for _ in range(200):
     action=optimal_action_table[observation]
     observation, reward, terminated, truncated, info = env.step(action)
     if terminated or truncated:
         observation, info = env.reset()
+'''
+for step in range(200):
+    action = optimal_action_table.get(observation, env.action_space.sample())  # Fallback to random action if not found
+    observation, reward, terminated, truncated, info = env.step(action)
 
+    if terminated or truncated:
+        observation, info = env.reset()
+
+    # Print the action taken at each step
+    print(f"Step {step}: Action taken - {action}")
+
+# Close environment
+env.close()
 env.close()
 
